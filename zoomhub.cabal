@@ -97,7 +97,10 @@ library
     , mime
     , network
     , network-uri
+    , opaleye
+    , postgresql-simple
     , process
+    , product-profunctors
     , random
     , retry == 0.7.1
     , safe
