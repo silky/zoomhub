@@ -114,8 +114,8 @@ library
     , temporary
     , text
     , time
-    , timeit
     , time-units
+    , timeit
     , transformers
     , unix
     , unordered-containers
