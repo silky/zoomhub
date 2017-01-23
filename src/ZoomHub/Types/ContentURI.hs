@@ -1,23 +1,37 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE TemplateHaskell       #-}
 
 module ZoomHub.Types.ContentURI
   ( ContentURI
+  , ContentURI'(ContentURI)
+  , ContentURIColumn
   , unContentURI
+  , pContentURI
   ) where
 
-import           Data.Aeson                       (ToJSON, Value (String),
-                                                   toJSON)
-import           Data.Text                        (Text)
-import qualified Data.Text                        as T
-import           Database.SQLite.Simple           (SQLData (SQLText))
-import           Database.SQLite.Simple.FromField (FromField, ResultError (ConversionFailed),
-                                                   fromField, returnError)
-import           Database.SQLite.Simple.Internal  (Field (Field))
-import           Database.SQLite.Simple.Ok        (Ok (Ok))
-import           Database.SQLite.Simple.ToField   (ToField, toField)
-import           Servant                          (FromText, fromText)
+import           Data.Aeson                           (ToJSON, Value (String),
+                                                       toJSON)
+import           Data.Profunctor.Product.TH           (makeAdaptorAndInstance)
+import           Data.Text                            (Text)
+import qualified Data.Text                            as T
+import qualified Database.PostgreSQL.Simple.FromField as PGS
+import           Database.SQLite.Simple               (SQLData (SQLText))
+import           Database.SQLite.Simple.FromField     (FromField, ResultError (ConversionFailed),
+                                                       fromField, returnError)
+import           Database.SQLite.Simple.Internal      (Field (Field))
+import           Database.SQLite.Simple.Ok            (Ok (Ok))
+import           Database.SQLite.Simple.ToField       (ToField, toField)
+import           Opaleye                              (Column, PGText,
+                                                       QueryRunnerColumnDefault,
+                                                       fieldQueryRunnerColumn,
+                                                       queryRunnerColumnDefault)
+import           Servant                              (FromText, fromText)
 
-newtype ContentURI = ContentURI { unContentURI :: Text } deriving Eq
+newtype ContentURI' a = ContentURI { unContentURI :: a }
+  deriving (Eq)
+type ContentURI = ContentURI' Text
 
 instance Show ContentURI where
   show = T.unpack . unContentURI
@@ -44,3 +58,17 @@ instance FromField ContentURI where
       Just r  -> Ok r
       Nothing -> returnError ConversionFailed field "Invalid `ContentURI`"
   fromField field = returnError ConversionFailed field "Invalid `ContentURI`"
+
+-- PostgreSQL
+type ContentURIColumn = ContentURI' (Column PGText)
+$(makeAdaptorAndInstance "pContentURI" ''ContentURI')
+
+instance PGS.FromField ContentURI where
+  fromField f mdata = PGS.fromField f mdata >>= parseContentURI
+    where
+      parseContentURI t = case fromText t of
+        Just r  -> return r
+        Nothing -> PGS.returnError PGS.ConversionFailed f "invalid content URI"
+
+instance QueryRunnerColumnDefault PGText ContentURI where
+  queryRunnerColumnDefault = fieldQueryRunnerColumn
