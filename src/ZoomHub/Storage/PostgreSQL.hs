@@ -52,7 +52,10 @@ import           Opaleye                         (Column, Nullable, PGFloat8,
 --                                                  contentProgress, contentSize,
 --                                                  contentState, contentType,
 --                                                  contentURL, mkContent)
-import           ZoomHub.Types.ContentId         (ContentId, unId)
+import           ZoomHub.Types.ContentId         (ContentId,
+                                                  ContentId' (ContentId),
+                                                  ContentIdColumn, pContentId,
+                                                  unId)
 -- import qualified ZoomHub.Types.ContentId        as ContentId
 -- import           ZoomHub.Types.ContentMIME      (ContentMIME)
 -- import           ZoomHub.Types.ContentState     (ContentState (Initialized, Active, CompletedSuccess, CompletedFailure))
@@ -171,7 +174,7 @@ type Content = Content'
 
 type ContentColumnWrite = Content'
   (Maybe (Column PGInt8))           -- id
-  (Column PGText)                   -- hashId
+  ContentIdColumn                   -- hashId
   (Column PGInt4)                   -- typeId
   (Column PGText)                   -- url
   (Column PGText)                   -- state
@@ -192,7 +195,7 @@ type ContentColumnWrite = Content'
 
 type ContentColumnRead = Content'
   (Column PGInt8)                   -- id
-  (Column PGText)                   -- hashId
+  ContentIdColumn                   -- hashId
   (Column PGInt4)                   -- typeId
   (Column PGText)                   -- url
   (Column PGText)                   -- state
@@ -217,7 +220,7 @@ contentTable :: Table ContentColumnWrite ContentColumnRead
 contentTable = Table "content"
                    (pContent Content
                       { contentId = optional "id"
-                      , contentHashId = required "hashid"
+                      , contentHashId = pContentId (ContentId (required "hashid"))
                       , contentTypeId = required "typeid"
                       , contentURL = required "url"
                       , contentState = required "state"

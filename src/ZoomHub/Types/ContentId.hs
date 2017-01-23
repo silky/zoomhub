@@ -3,9 +3,13 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE TemplateHaskell       #-}
 
 module ZoomHub.Types.ContentId
   ( ContentId
+  , ContentId'(ContentId)
+  , ContentIdColumn
+  , pContentId
   , fromInteger
   , fromString
   , isValid
@@ -21,6 +25,7 @@ import           Data.Aeson                           (FromJSON, ToJSON,
                                                        toJSON)
 import           Data.Aeson.Casing                    (aesonPrefix, camelCase)
 import           Data.List                            (intersperse)
+import           Data.Profunctor.Product.TH           (makeAdaptorAndInstance)
 import           Data.Set                             (Set)
 import qualified Data.Set                             as Set
 import qualified Data.Text                            as T
@@ -32,7 +37,7 @@ import           Database.SQLite.Simple.Internal      (Field (Field))
 import           Database.SQLite.Simple.Ok            (Ok (Ok))
 import           Database.SQLite.Simple.ToField       (ToField, toField)
 import           GHC.Generics                         (Generic)
-import           Opaleye                              (PGText,
+import           Opaleye                              (Column, PGText,
                                                        QueryRunnerColumnDefault,
                                                        fieldQueryRunnerColumn,
                                                        queryRunnerColumnDefault)
@@ -42,8 +47,9 @@ import           Servant                              (FromText, fromText)
 
 -- TODO: Use record syntax, i.e. `ContentId { unId :: String }` without
 -- introducing `{"id": <id>}` JSON serialization:
-newtype ContentId = ContentId String
+newtype ContentId' a = ContentId a
   deriving (Eq, Generic, Show)
+type ContentId = ContentId' String
 
 unId :: ContentId -> String
 unId (ContentId cId) = cId
@@ -94,6 +100,9 @@ instance FromField ContentId where
   fromField f = returnError ConversionFailed f "invalid content ID"
 
 -- PostgreSQL
+type ContentIdColumn = ContentId' (Column PGText)
+$(makeAdaptorAndInstance "pContentId" ''ContentId')
+
 instance PGS.FromField ContentId where
   fromField f mdata = PGS.fromField f mdata >>= parseContentId
     where
