@@ -111,8 +111,8 @@ getBy fieldName param conn = undefined
 -- get :: IO [ContentRow] -> IO (Maybe Content)
 -- get queryAction = undefined
 
-printSql :: Default Unpackspec a a => Query a -> IO ()
-printSql = putStrLn . showSqlForPostgres
+printSQL :: Default Unpackspec a a => Query a -> IO ()
+printSQL = putStrLn . showSqlForPostgres
 
 data Content'
   tId
@@ -278,7 +278,7 @@ dbConnectInfo = PGS.defaultConnectInfo
 
 main :: IO ()
 main = do
-  -- printSql contentQuery
+  -- printSQL contentQuery
   let cId = mkContentId "8"
   conn <- PGS.connect dbConnectInfo
   -- res <- runContentQuery conn (limit 1 contentQuery)
