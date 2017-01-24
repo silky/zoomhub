@@ -11,6 +11,7 @@ import           Control.Monad.Trans.Either           (EitherT, left)
 import qualified Data.ByteString.Char8                as BC
 import           Data.Maybe                           (fromJust, fromMaybe)
 import           Data.Proxy                           (Proxy (Proxy))
+import qualified Database.PostgreSQL.Simple           as PGS
 import           Network.URI                          (URI,
                                                        parseRelativeReference,
                                                        relativeTo)
@@ -41,6 +42,7 @@ import           ZoomHub.Config                       (Config, NewContentStatus 
 import qualified ZoomHub.Config                       as Config
 import           ZoomHub.Servant.RawCapture           (RawCapture)
 import           ZoomHub.Servant.RequiredQueryParam   (RequiredQueryParam)
+import           ZoomHub.Storage.PostgreSQL           as PG
 import           ZoomHub.Storage.SQLite               (create, getById,
                                                        getById', getByURL,
                                                        getByURL',
@@ -161,6 +163,12 @@ app :: Config -> Application
 app config = logger . simpleCors $ serve api (server config)
   where logger = Config.logger config
 
+-- Database
+pgConnectInfo :: PGS.ConnectInfo
+pgConnectInfo = PGS.defaultConnectInfo
+  { PGS.connectDatabase = "zoomhub-production"
+  }
+
 -- Handlers
 
 -- Meta
@@ -228,7 +236,9 @@ restContentById :: BaseURI ->
                    ContentId ->
                    Handler Content
 restContentById baseURI contentBaseURI dbPath contentId = do
-  maybeContent <- liftIO $ withConnection dbPath (getById' contentId  dbPath)
+  pgConn <- liftIO $ PGS.connect pgConnectInfo
+  maybeContent <- liftIO $ PG.getById contentId pgConn
+  -- maybeContent <- liftIO $ withConnection dbPath (getById' contentId  dbPath)
   case maybeContent of
     Nothing      -> left . API.error404 $ contentNotFoundMessage contentId
     Just content -> return $ fromInternal baseURI contentBaseURI content
