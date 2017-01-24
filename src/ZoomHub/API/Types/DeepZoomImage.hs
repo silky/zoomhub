@@ -25,7 +25,7 @@ import           System.FilePath              ((<.>), (</>))
 
 import           ZoomHub.Types.ContentBaseURI (ContentBaseURI, contentBaseHost,
                                                contentBasePath)
-import           ZoomHub.Types.ContentId      (ContentId, unId)
+import           ZoomHub.Types.ContentId      (ContentId, unContentId)
 import qualified ZoomHub.Types.DeepZoomImage  as Internal
 
 data DeepZoomImage = DeepZoomImage
@@ -50,7 +50,7 @@ fromInternal baseURI cId dzi = DeepZoomImage
   , dziTileFormat  = Internal.dziTileFormat dzi
   }
   where
-    name = unId cId <.> "dzi"
+    name = unContentId cId <.> "dzi"
     path =
       case parseRelativeReference $ show (contentBasePath baseURI) </> name of
         Just p  -> p
