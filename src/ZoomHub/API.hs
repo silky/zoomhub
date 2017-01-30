@@ -43,10 +43,7 @@ import qualified ZoomHub.Config                       as Config
 import           ZoomHub.Servant.RawCapture           (RawCapture)
 import           ZoomHub.Servant.RequiredQueryParam   (RequiredQueryParam)
 import           ZoomHub.Storage.PostgreSQL           as PG
-import           ZoomHub.Storage.SQLite               (create, getById,
-                                                       getById', getByURL,
-                                                       getByURL',
-                                                       withConnection)
+import           ZoomHub.Storage.SQLite               as SQLite
 import           ZoomHub.Types.BaseURI                (BaseURI, unBaseURI)
 import qualified ZoomHub.Types.Content                as Internal
 import           ZoomHub.Types.ContentBaseURI         (ContentBaseURI)
@@ -61,7 +58,6 @@ import           ZoomHub.Web.Types.EmbedDimension     (EmbedDimension)
 import           ZoomHub.Web.Types.EmbedId            (EmbedId, unEmbedId)
 import           ZoomHub.Web.Types.ViewContent        (ViewContent,
                                                        mkViewContent)
-
 
 -- Servant default handler type
 type Handler a = EitherT ServantErr IO a
@@ -186,7 +182,8 @@ jsonpContentById :: BaseURI ->
                     Callback ->
                     Handler (JSONP (NonRESTfulResponse Content))
 jsonpContentById baseURI contentBaseURI dbPath contentId callback = do
-  maybeContent <- liftIO $ withConnection dbPath (getById' contentId dbPath)
+  maybeContent <- liftIO $
+    SQLite.withConnection dbPath (SQLite.getById' contentId dbPath)
   case maybeContent of
     Nothing      -> left $ JSONP.mkError $
       mkJSONP callback $ mkNonRESTful404 $ contentNotFoundMessage contentId
@@ -201,7 +198,8 @@ jsonpContentByURL :: BaseURI ->
                      Callback ->
                      Handler (JSONP (NonRESTfulResponse Content))
 jsonpContentByURL baseURI contentBaseURI dbPath url callback = do
-  maybeContent <- liftIO $ withConnection dbPath (getByURL' url dbPath)
+  maybeContent <-
+    liftIO $ SQLite.withConnection dbPath (SQLite.getByURL' url dbPath)
   case maybeContent of
     Nothing      -> left . JSONP.mkError $
       mkJSONP callback (mkNonRESTful503 noNewContentErrorMessage)
@@ -238,7 +236,8 @@ restContentById :: BaseURI ->
 restContentById baseURI contentBaseURI dbPath contentId = do
   pgConn <- liftIO $ PGS.connect pgConnectInfo
   maybeContent <- liftIO $ PG.getById contentId pgConn
-  -- maybeContent <- liftIO $ withConnection dbPath (getById' contentId  dbPath)
+  -- maybeContent <-
+    -- liftIO $ SQLite.withConnection dbPath (SQLite.getById' contentId  dbPath)
   case maybeContent of
     Nothing      -> left . API.error404 $ contentNotFoundMessage contentId
     Just content -> return $ fromInternal baseURI contentBaseURI content
@@ -254,12 +253,13 @@ restContentByURL :: BaseURI ->
                     ContentURI ->
                     Handler Content
 restContentByURL baseURI dbPath encodeId newContentStatus url = do
-  maybeContent <- liftIO $ withConnection dbPath (getByURL' url dbPath)
+  maybeContent <-
+    liftIO $ SQLite.withConnection dbPath (SQLite.getByURL' url dbPath)
   case maybeContent of
     Nothing      -> do
       newContent <- case newContentStatus of
         NewContentAllowed ->
-          liftIO $ withConnection dbPath (create encodeId url)
+          liftIO $ SQLite.withConnection dbPath (SQLite.create encodeId url)
         _ -> noNewContentErrorAPI
       redirectToAPI baseURI (Internal.contentId newContent)
     Just content -> redirectToAPI baseURI (Internal.contentId content)
@@ -282,7 +282,8 @@ webEmbed :: BaseURI ->
             Handler Embed
 webEmbed baseURI contentBaseURI staticBaseURI dbPath viewerScript embedId
          maybeId width height = do
-  maybeContent <- liftIO $ withConnection dbPath (getById' contentId  dbPath)
+  maybeContent <-
+    liftIO $ SQLite.withConnection dbPath (SQLite.getById' contentId  dbPath)
   case maybeContent of
     Nothing      -> left . Web.error404 $ contentNotFoundMessage contentId
     Just content -> do
@@ -303,7 +304,8 @@ webContentById :: BaseURI ->
                   ContentId ->
                   Handler ViewContent
 webContentById baseURI contentBaseURI dbPath contentId = do
-  maybeContent <- liftIO $ withConnection dbPath (getById contentId)
+  maybeContent <-
+    liftIO $ SQLite.withConnection dbPath (SQLite.getById contentId)
   case maybeContent of
     Nothing -> left . Web.error404 $ contentNotFoundMessage contentId
     Just c  -> do
@@ -313,7 +315,8 @@ webContentById baseURI contentBaseURI dbPath contentId = do
 -- TODO: Add support for submission, i.e. create content in the background:
 webContentByURL :: BaseURI -> DatabasePath -> ContentURI -> Handler ViewContent
 webContentByURL baseURI dbPath contentURI = do
-  maybeContent <- liftIO $ withConnection dbPath (getByURL contentURI)
+  maybeContent <-
+    liftIO $ SQLite.withConnection dbPath (SQLite.getByURL contentURI)
   case maybeContent of
     Nothing -> noNewContentErrorWeb
     Just c  -> redirectToView baseURI (Internal.contentId c)
