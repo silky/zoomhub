@@ -7,8 +7,8 @@ module ZoomHub.Types.ContentURI
   ( ContentURI
   , ContentURI'(ContentURI)
   , ContentURIColumn
-  , unContentURI
   , pContentURI
+  , toColumn
   ) where
 
 import           Data.Aeson                           (ToJSON, Value (String),
@@ -26,6 +26,7 @@ import           Database.SQLite.Simple.ToField       (ToField, toField)
 import           Opaleye                              (Column, PGText,
                                                        QueryRunnerColumnDefault,
                                                        fieldQueryRunnerColumn,
+                                                       pgStrictText,
                                                        queryRunnerColumnDefault)
 import           Servant                              (FromText, fromText)
 
@@ -62,6 +63,9 @@ instance FromField ContentURI where
 -- PostgreSQL
 type ContentURIColumn = ContentURI' (Column PGText)
 $(makeAdaptorAndInstance "pContentURI" ''ContentURI')
+
+toColumn :: ContentURI -> ContentURIColumn
+toColumn (ContentURI t) = ContentURI (pgStrictText t)
 
 instance PGS.FromField ContentURI where
   fromField f mdata = PGS.fromField f mdata >>= parseContentURI
