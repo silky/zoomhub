@@ -37,6 +37,10 @@ type ContentURI = ContentURI' Text
 instance Show ContentURI where
   show = T.unpack . unContentURI
 
+-- Functor
+instance Functor ContentURI' where
+  fmap f (ContentURI a) = ContentURI (f a)
+
 -- Text
 instance FromText ContentURI where
   fromText t
@@ -65,7 +69,7 @@ type ContentURIColumn = ContentURI' (Column PGText)
 $(makeAdaptorAndInstance "pContentURI" ''ContentURI')
 
 toColumn :: ContentURI -> ContentURIColumn
-toColumn (ContentURI t) = ContentURI (pgStrictText t)
+toColumn = fmap pgStrictText
 
 instance PGS.FromField ContentURI where
   fromField f mdata = PGS.fromField f mdata >>= parseContentURI
