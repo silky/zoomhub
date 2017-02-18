@@ -9,6 +9,8 @@ module ZoomHub.Types.ContentURI
   , ContentURIColumn
   , pContentURI
   , toColumn
+  -- TODO: Can we test this without exporting it?
+  , unContentURI
   ) where
 
 import           Data.Aeson                           (ToJSON, Value (String),
