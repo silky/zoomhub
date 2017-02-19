@@ -13,6 +13,8 @@ dependencies:
     - sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 575159689BEFB442
     - echo 'deb http://download.fpcomplete.com/ubuntu precise main' | sudo tee /etc/apt/sources.list.d/fpco.list
     - sudo apt-get update && sudo apt-get install stack -y
+
+    - sudo apt-get update && sudo apt-get install pgloader -y
   override:
     - stack setup
     - stack build --ghc-options="-Wall -Werror -O3"
@@ -22,7 +24,11 @@ dependencies:
 
 test:
   override:
-    - stack test
+    - PGUSER='ubuntu' PGDATABASE='circle_test' stack test
+
+database:
+  override:
+    - pgloader ./data/zoomhub-development.sqlite3 postgresql://ubuntu:@localhost/circle_test
 
 deployment:
   staging:
