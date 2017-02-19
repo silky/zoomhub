@@ -131,7 +131,7 @@ server config =
     :<|> jsonpContentByURL baseURI contentBaseURI dbPath
     :<|> jsonpInvalidRequest
     -- API: RESTful
-    :<|> restContentById baseURI contentBaseURI dbConnectInfo
+    :<|> restContentById baseURI contentBaseURI dbConnInfo
     :<|> restInvalidContentId
     :<|> restContentByURL baseURI dbPath encodeId newContentStatus
     :<|> restInvalidRequest
@@ -147,8 +147,8 @@ server config =
   where
     baseURI = Config.baseURI config
     contentBaseURI = Config.contentBaseURI config
+    dbConnInfo = Config.dbConnInfo config
     dbPath = Config.dbPath config
-    dbConnectInfo = Config.dbConnectInfo config
     encodeId = Config.encodeId config
     newContentStatus = Config.newContentStatus config
     publicPath = Config.publicPath config
